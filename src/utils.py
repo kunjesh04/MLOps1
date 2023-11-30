@@ -4,6 +4,7 @@ import dill
 import numpy as np
 import pandas as pd
 from sklearn.metrics import r2_score
+from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 
 from src.logger import logging
 from src.exception import CustomException
@@ -15,17 +16,25 @@ def save_object(file_path, obj):
         
         with open(file_path, "wb") as file_obj:
             dill.dump(obj, file_obj)
+        
+        logging.info('Object Saved')
     except Exception as e:
         raise CustomException(e, sys)
     
-def evaluate_model(X_train, y_train, X_test, y_test, models):
+def evaluate_model(X_train, y_train, X_test, y_test, models, param):
     try:
         report = {}
-        
+        logging.info('Starting randomized search')
         for i in range(len(list(models))):
             model = list(models.values())[i]
+            parameters = param[list(models.keys())[i]]
+            
+            rs = RandomizedSearchCV(model, parameters, cv=3, n_iter=100)
+            rs.fit(X_train, y_train)
+            logging.info('GridSearch implemented')
             
             # Train the model
+            model.set_params(**rs.best_params_)
             model.fit(X_train, y_train)
             
             y_train_preds = model.predict(X_train)
